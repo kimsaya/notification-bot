@@ -7,20 +7,25 @@ import (
 	HELPER "notification-bot/helpers"
 )
 
-var logsDirectory = ""
+// initalizeLog inital the log process.
+func initalizeLog(logDirectory string) bool {
 
-// InitalizeLog inital the log process.
-func InitalizeLog(directory string) bool {
-	logsDirectory = directory
-	filePath := directory + "/" + HELPER.GetNowDate()
-	writer := io.Writer(OpenFile(filePath))
+	filePath := logDirectory + "/" + HELPER.GetNowDate()
+	writer := io.Writer(openFile(filePath))
 	log.SetOutput(writer)
-	log.Println("[IN] _UTILS initialized")
+	log.Println("[IN] UTILS InitalizeLog")
 	return true
 }
 
-// checkOutDateLogFile find out of date log then remove to save storage
-func checkOutDateLogFile() bool {
+// checkOutDateLogFile find out of date log then remove to save storage\
+// duration is how long the file will keep in day.
+func checkOutDateLogFile(logsDirectory string, duration int) bool {
 
+	filePaths := getNoLimitInDirectory(logsDirectory)
+	for _, filePath := range filePaths {
+		if HELPER.GetTimestampFromStringOfDate(getFileNameFromPath(filePath)) < HELPER.GetNowTimestamp()-(int64(duration)*HELPER.GetOneDay()) {
+			removeFile(filePath)
+		}
+	}
 	return false
 }
