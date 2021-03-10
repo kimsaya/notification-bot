@@ -16,8 +16,8 @@ var EXP_DIR = APP_DIR + "/export"
 var LOG_DUR = 60
 
 // BOT_TOKEN the discord bot's token
-var BOT_TOKEN = "ODE3NzcxNzgwNjMwMTE4NDEx.YEOXUQ.iWUvEVRikYnbp41FyvKU1wq2Pp0"
+var BOT_TOKEN = ""
 
 // BOT_CHHANEL channel that bot want to work with.
 // Find the ID: https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-
-var BOT_CHANNEL = []string{"694725295143518291", ""}
+var BOT_CHANNEL = []string{"", ""}
