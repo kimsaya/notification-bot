@@ -7,7 +7,7 @@ import (
 
 // CreateUser a
 func CreateUser(user MODEL.User) bool {
-	filePath := repoDirectory + "/users/" + user.Id
+	filePath := repoDirectory + "/users/" + user.ID
 	file := UTILS.OpenFile(filePath)
 	file.Close()
 	return UTILS.WriteFile(filePath, user.Name)
@@ -20,7 +20,7 @@ func FindUserByID(id string) *MODEL.User {
 		if userID == id {
 			name, status := UTILS.ReadFile(filePath)
 			if status {
-				return &MODEL.User{Id: userID, Name: name}
+				return &MODEL.User{ID: userID, Name: name}
 			}
 		}
 	}

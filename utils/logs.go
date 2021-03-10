@@ -13,7 +13,6 @@ func initalizeLog(logDirectory string) bool {
 	filePath := logDirectory + "/" + HELPER.GetNowDate()
 	writer := io.Writer(OpenFile(filePath))
 	log.SetOutput(writer)
-	log.Println("[IN] UTILS InitalizeLog")
 	return true
 }
 

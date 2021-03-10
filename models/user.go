@@ -1,6 +1,9 @@
 package models
 
+// User a
 type User struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	LastActive string `json:"last_active"`
+	JointDate  string `json:"joint_date"`
 }

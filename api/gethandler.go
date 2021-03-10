@@ -14,15 +14,18 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	if HELPER.StringContain(botChannel, m.ChannelID) {
-		if strings.HasPrefix(m.Content, "!set") {
+		// if strings.HasPrefix(m.Content, "!set") {
+		// m.Mentions[0].
+		if strings.Contains(m.Content, "bot") {
 			//!Setup the Task
 			user := REPO.FindUserByID(m.Author.ID)
 			if user == nil {
-				REPO.CreateUser(MODEL.User{Id: m.Author.ID, Name: m.Author.Username})
+				REPO.CreateUser(MODEL.User{ID: m.Author.ID, Name: m.Author.Username})
 				s.ChannelMessageSend(m.ChannelID, "Welcome "+m.Author.Username)
 			} else {
 				s.ChannelMessageSend(m.ChannelID, "Hi "+user.Name)
 			}
 		}
+
 	}
 }
