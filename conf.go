@@ -6,8 +6,18 @@ var APP_DIR = "./.target"
 // LOG_DIR Log directory.
 var LOG_DIR = APP_DIR + "/logs"
 
-// LOG_DUR Log keep duration 60 = 60 day.
+// DAT_DIR data directory.
+var DAT_DIR = APP_DIR + "/data"
+
+// EXP_DIR export as excel file directory.
+var EXP_DIR = APP_DIR + "/export"
+
+// LOG_DUR Log keep duration in day.
 var LOG_DUR = 60
 
-// BOT_TOKEN is discord bot token
-var BOT_TOKEN = ""
+// BOT_TOKEN the discord bot's token
+var BOT_TOKEN = "ODE3NzcxNzgwNjMwMTE4NDEx.YEOXUQ.iWUvEVRikYnbp41FyvKU1wq2Pp0"
+
+// BOT_CHHANEL channel that bot want to work with.
+// Find the ID: https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-
+var BOT_CHANNEL = []string{"694725295143518291", ""}

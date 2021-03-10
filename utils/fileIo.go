@@ -9,7 +9,7 @@ import (
 )
 
 // CheckDirectoryOfFile check if Directory of file is available
-func checkDirectoryOfFile(filePath string) bool {
+func CheckDirectoryOfFile(filePath string) bool {
 	fullPath := ""
 	paths := strings.Split(filePath, "/")
 	for i, path := range paths {
@@ -20,11 +20,11 @@ func checkDirectoryOfFile(filePath string) bool {
 			fullPath += "/" + path
 		}
 	}
-	return createDirectory(fullPath)
+	return CreateDirectory(fullPath)
 }
 
-// createDirectory create a directory
-func createDirectory(directory string) bool {
+// CreateDirectory create a directory
+func CreateDirectory(directory string) bool {
 	if _, err := os.Stat(directory); os.IsNotExist(err) {
 		err := os.MkdirAll(directory, os.ModePerm)
 		if err != nil {
@@ -35,8 +35,8 @@ func createDirectory(directory string) bool {
 	return true
 }
 
-// removeFile remove a file
-func removeFile(sourcePath string) bool {
+// RemoveFile remove a file
+func RemoveFile(sourcePath string) bool {
 	err := os.Remove(sourcePath)
 	if err != nil {
 		log.Println("[ER] RemoveFile:", err)
@@ -45,9 +45,9 @@ func removeFile(sourcePath string) bool {
 	return true
 }
 
-// openFile open a file for READ, WRITE, and APPEND
-func openFile(filePath string) (openedFile *os.File) {
-	checkDirectoryOfFile(filePath)
+// OpenFile open a file for READ, WRITE, and APPEND
+func OpenFile(filePath string) (openedFile *os.File) {
+	CheckDirectoryOfFile(filePath)
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0640)
 	if err != nil {
 		log.Println("[ER] OpenFile : ", err)
@@ -94,8 +94,8 @@ func AppendFile(filePath, message string) bool {
 	return true
 }
 
-// getFileNameFromPath splite out the full path then get the name
-func getFileNameFromPath(path string) (fileName string) {
+// GetFileNameFromPath splite out the full path then get the name
+func GetFileNameFromPath(path string) (fileName string) {
 	sectors := strings.Split(path, "/")
 	if len(sectors) == 1 {
 		sectors = strings.Split(path, "\\")
@@ -103,13 +103,13 @@ func getFileNameFromPath(path string) (fileName string) {
 	return sectors[len(sectors)-1]
 }
 
-// getNoLimitInDirectory return list of all files in a directory
-func getNoLimitInDirectory(directory string) (listFilePaths []string) {
+// GetNoLimitInDirectory return list of all files in a directory
+func GetNoLimitInDirectory(directory string) (listFilePaths []string) {
 	var paths []string
 	files, err := ioutil.ReadDir(directory)
 	if err != nil {
 		log.Println("[ER] GetNoLimitInDirectory:", err)
-		createDirectory(directory)
+		CreateDirectory(directory)
 	}
 	for _, f := range files {
 		if f.IsDir() {
@@ -120,8 +120,8 @@ func getNoLimitInDirectory(directory string) (listFilePaths []string) {
 	return paths
 }
 
-// getLimitInDirectory return list of files in a directory with limit of items
-func getLimitInDirectory(directory string, limit int) (listFilePaths []string) {
+// GetLimitInDirectory return list of files in a directory with limit of items
+func GetLimitInDirectory(directory string, limit int) (listFilePaths []string) {
 	var paths []string
 	i := 0
 	err := filepath.Walk(directory,
@@ -140,7 +140,7 @@ func getLimitInDirectory(directory string, limit int) (listFilePaths []string) {
 		})
 	if err != nil {
 		log.Println("[ER] GetLimitInDirectory", err)
-		createDirectory(directory)
+		CreateDirectory(directory)
 	}
 	return paths
 }

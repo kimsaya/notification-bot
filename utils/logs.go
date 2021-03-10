@@ -11,7 +11,7 @@ import (
 func initalizeLog(logDirectory string) bool {
 
 	filePath := logDirectory + "/" + HELPER.GetNowDate()
-	writer := io.Writer(openFile(filePath))
+	writer := io.Writer(OpenFile(filePath))
 	log.SetOutput(writer)
 	log.Println("[IN] UTILS InitalizeLog")
 	return true
@@ -21,10 +21,10 @@ func initalizeLog(logDirectory string) bool {
 // duration is how long the file will keep in day.
 func checkOutDateLogFile(logsDirectory string, duration int) bool {
 
-	filePaths := getNoLimitInDirectory(logsDirectory)
+	filePaths := GetNoLimitInDirectory(logsDirectory)
 	for _, filePath := range filePaths {
-		if HELPER.GetTimestampFromStringOfDate(getFileNameFromPath(filePath)) < HELPER.GetNowTimestamp()-(int64(duration)*HELPER.GetOneDay()) {
-			removeFile(filePath)
+		if HELPER.GetTimestampFromStringOfDate(GetFileNameFromPath(filePath)) < HELPER.GetNowTimestamp()-(int64(duration)*HELPER.GetOneDay()) {
+			RemoveFile(filePath)
 		}
 	}
 	return false

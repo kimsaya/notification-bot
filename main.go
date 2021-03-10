@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	API "notification-bot/api"
+	REPO "notification-bot/repository"
 	UTILS "notification-bot/utils"
 	"os"
 	"os/signal"
@@ -12,7 +13,8 @@ import (
 func main() {
 	fmt.Println("Hello World")
 	UTILS.Initalize(LOG_DIR, LOG_DUR)
-	API.Initalize(BOT_TOKEN)
+	REPO.Initalize(DAT_DIR)
+	API.Initalize(BOT_TOKEN, BOT_CHANNEL)
 
 	fmt.Println("Testing is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
