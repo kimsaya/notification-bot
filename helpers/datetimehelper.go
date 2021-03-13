@@ -42,7 +42,44 @@ func GetTimestampFromStringOfDate(input string) int64 {
 	return t.UnixNano() / int64(time.Millisecond)
 }
 
+func GetOneWeek() int64 {
+	return 7 * GetOneDay()
+}
+
 // GetOneDay return Timestamp in one day
 func GetOneDay() int64 {
-	return 86400000
+	return 24 * GetOneHour()
+}
+
+func GetOneHour() int64 {
+	return 3600000
+}
+
+func GetOneMinute() int64 {
+	return 60000
+}
+
+// GetDurationFromTimestap a
+func GetDurationFromTimestap(input int64) string {
+	result := ""
+	if input >= GetOneWeek() {
+		i := input / GetOneWeek()
+		result += Int64ToString(i) + " Week "
+		input = input % GetOneWeek()
+	}
+	if input >= GetOneDay() {
+		i := input / GetOneDay()
+		result += Int64ToString(i) + " Day "
+		input = input % GetOneDay()
+	}
+	if input >= GetOneHour() {
+		i := input / GetOneHour()
+		result += Int64ToString(i) + " Hour "
+		input = input % GetOneHour()
+
+		i = input / GetOneMinute()
+		result += Int64ToString(i) + " Minute "
+		input = input % GetOneMinute()
+	}
+	return result
 }

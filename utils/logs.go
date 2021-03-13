@@ -10,7 +10,7 @@ import (
 // initalizeLog inital the log process.
 func initalizeLog(logDirectory string) bool {
 
-	filePath := logDirectory + "/" + HELPER.GetNowDate()
+	filePath := logDirectory + HELPER.GetNowDate()
 	writer := io.Writer(OpenFile(filePath))
 	log.SetOutput(writer)
 	return true

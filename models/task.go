@@ -7,5 +7,6 @@ type Task struct {
 	TaskTitle   string `json:"task_title"`
 	Description string `json:"description"`
 	Status      string `json:"status"`
+	LastUpdate  int64  `json:"last_update"`
 	CreatedDate string `json:"creater_date"`
 }
