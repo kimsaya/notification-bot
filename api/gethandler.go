@@ -2,8 +2,10 @@ package api
 
 import (
 	HELPER "notification-bot/helpers"
-	MODEL "notification-bot/models"
-	REPO "notification-bot/repository"
+	SERVICE "notification-bot/services"
+
+	// 
+	// REPO "notification-bot/repository"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -13,18 +15,26 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
+	// Check Channel
 	if HELPER.StringContain(botChannel, m.ChannelID) {
-		// if strings.HasPrefix(m.Content, "!set") {
-		// m.Mentions[0].
-		if strings.Contains(m.Content, "bot") {
-			//!Setup the Task
-			user := REPO.FindUserByID(m.Author.ID)
-			if user == nil {
-				REPO.CreateUser(MODEL.User{ID: m.Author.ID, Name: m.Author.Username})
-				s.ChannelMessageSend(m.ChannelID, "Welcome "+m.Author.Username)
-			} else {
-				s.ChannelMessageSend(m.ChannelID, "Hi "+user.Name)
+		// If Bot it self end progres
+		if m.Author.ID == s.State.User.ID {
+			return
+		}
+		// Check If someone Metion Bot => Will greating
+		if len(m.Mentions) > 0 {
+			for _, men := range m.Mentions {
+				if men.ID == s.State.User.ID {
+					// Greating
+					s.ChannelMessageSend(m.ChannelID, "Hi "+m.Author.Username)
+				}
 			}
+		}
+
+		if strings.HasPrefix(m.Content, "!create") {
+			SERVICE.CreateItem(s, m)
+		} else if strings.HasPrefix(m.Content, "!set") {
+			SERVICE.SetSerie(s, m)
 		}
 
 	}
