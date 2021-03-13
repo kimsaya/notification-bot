@@ -1,16 +1,16 @@
 package main
 
 // APP_DIR App date directory.
-var APP_DIR = "./.target"
+var APP_DIR = "./.target/"
 
 // LOG_DIR Log directory.
-var LOG_DIR = APP_DIR + "/logs"
+var LOG_DIR = APP_DIR + "logs/"
 
 // DAT_DIR data directory.
-var DAT_DIR = APP_DIR + "/data"
+var DAT_DIR = APP_DIR + "data/"
 
 // EXP_DIR export as excel file directory.
-var EXP_DIR = APP_DIR + "/export"
+var EXP_DIR = APP_DIR + "export/"
 
 // LOG_DUR Log keep duration in day.
 var LOG_DUR = 60
