@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	HELPER "notification-bot/helpers"
@@ -10,6 +11,26 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 )
+
+func Greating(s *discordgo.Session, channerlID string) {
+
+	return
+
+	// users := REPO.FindAllUsers()
+
+	// var messageSend = new(discordgo.MessageSend)
+	// messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+	// messageSend.Content = HELPER.GetNowTimeName() + " \n>>> "
+	// for _, user := range *users {
+	// 	messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, user.ID)
+	// 	messageSend.Content += "<@" + user.ID + "> \n"
+	// }
+	// _, err := s.ChannelMessageSendComplex(channerlID, messageSend)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+}
 
 func Users(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if user := REPO.FindUserByID(m.Author.ID); user != nil {
@@ -28,16 +49,16 @@ func Users(s *discordgo.Session, m *discordgo.MessageCreate) {
 // CreateItem a
 func CreateItem(s *discordgo.Session, m *discordgo.MessageCreate) {
 	messageSegment := strings.Split(m.Content, "\"")
-	fmt.Print(messageSegment)
+	// fmt.Print(messageSegment)
 	// s.GuildRoles()
 	role, err := s.GuildRoleCreate(m.GuildID)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 	role, err = s.GuildRoleEdit(m.GuildID, role.ID, messageSegment[1], 4171230, role.Hoist, role.Permissions, role.Mentionable)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 	var messageSend = new(discordgo.MessageSend)
@@ -46,7 +67,7 @@ func CreateItem(s *discordgo.Session, m *discordgo.MessageCreate) {
 	messageSend.Content = "Created: <@&" + role.ID + ">"
 	_, err = s.ChannelMessageSendComplex(m.ChannelID, messageSend)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 }
@@ -89,7 +110,7 @@ func SetSerie(s *discordgo.Session, m *discordgo.MessageCreate) {
 	item.Status = "Translation"
 	item.Duration = GetDuration(messageSegment[1])
 	if err := REPO.CreateItem(item); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 	var messageSend = new(discordgo.MessageSend)
@@ -98,6 +119,76 @@ func SetSerie(s *discordgo.Session, m *discordgo.MessageCreate) {
 	messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, item.ID)
 	messageSend.Content = ">>> Set: <@&" + item.ID + ">" + " Duration:" + HELPER.GetDurationFromTimestap(item.Duration) + " is Done. <@" + m.Author.ID + ">"
 	SendMessage(s, m, messageSend)
+}
+
+//
+func UpdateSerie(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// !translate @series [Chapter X]
+	messageSegment := strings.FieldsFunc(m.Content, OptionSpliter)
+	if len(messageSegment) < 2 {
+		var messageSend = new(discordgo.MessageSend)
+		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: Your command is wrong. \n\tTry to Chapter like this => [Chapter X]"
+		SendMessage(s, m, messageSend)
+		return
+	}
+	if len(m.MentionRoles) < 1 {
+		var messageSend = new(discordgo.MessageSend)
+		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: \n\tPls mention the item."
+		SendMessage(s, m, messageSend)
+		return
+	}
+	role := m.MentionRoles[0]
+	item := REPO.FindItemByID(role)
+	if item == nil {
+		var messageSend = new(discordgo.MessageSend)
+		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
+		messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, role)
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: The process `" + messageSegment[0] + "` <@&" + role + ">" + " is Feild. Becuase: `Not been set yet`."
+		SendMessage(s, m, messageSend)
+		return
+	}
+
+	// Find Exiting
+	newSubItem := new(MODEL.Item)
+	for _, subItem := range *item.SubItems {
+		if subItem.ID == messageSegment[1] {
+			newSubItem = &subItem
+			break
+		}
+	}
+	if strings.HasPrefix(m.Content, "!translate") {
+		newSubItem.Status = "Translated"
+		newSubItem.Description = "- Translated" + HELPER.GetNowDate() + " " + HELPER.GetNowTime() + "\n"
+	} else if strings.HasPrefix(m.Content, "!edit") {
+		newSubItem.Status = "Edited"
+		newSubItem.Description += "- Edited" + HELPER.GetNowDate() + " " + HELPER.GetNowTime() + "\n"
+	} else if strings.HasPrefix(m.Content, "!post") {
+		newSubItem.Status = "Posted"
+		newSubItem.Description += "- Post" + HELPER.GetNowDate() + " " + HELPER.GetNowTime() + "\n"
+	}
+	if newSubItem.ID == "" {
+		newSubItem.ID = messageSegment[1]
+		if newSubItem.Status != "Translated" {
+			var messageSend = new(discordgo.MessageSend)
+			messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+			messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
+			messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, role)
+			messageSend.Content = "Dear <@" + m.Author.ID + ">: The process `" + messageSegment[0] + "` <@&" + role + ">" + " completed with warning becuase: `Never told to translated before`."
+			SendMessage(s, m, messageSend)
+		}
+	}
+	*item.SubItems = append(*item.SubItems, *newSubItem)
+	if err := REPO.UpdateItem(item); err != nil {
+		log.Println(err)
+		return
+	}
+	s.MessageReactionAdd(m.ChannelID, m.ID, "❤️")
+
 }
 
 //
@@ -118,10 +209,16 @@ func CheckSerie(s *discordgo.Session, m *discordgo.MessageCreate) {
 		messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, role)
 		messageSend.Content = "Dear <@" + m.Author.ID +
 			">\n>>> The <@&" + role + "> " +
-			"\nTime Left: " + HELPER.GetDurationFromTimestap((item.CreatedDate+item.Duration)-HELPER.GetNowTimestamp()) +
-			"\nStatus:    " + item.Status + "[WILLBETABLE]" +
-			"\nLog:\n" + item.Description +
-			"\nAssign :   Unknow For Now"
+			"\nTranslator \t: Unknow" +
+			"\nEditor \t\t\t: Unknow" +
+			"\nDuration\t\t: " + HELPER.GetDurationFromTimestap((item.CreatedDate+item.Duration)-HELPER.GetNowTimestamp()) +
+			"\nStatus: "
+			// item.Status + " `WILLBETABLE`"
+
+		for _, subItem := range *item.SubItems {
+			messageSend.Content += "\n[" + subItem.ID + "] \t: " + subItem.Status
+		}
+		// messageSend.Content += "\n\nLog:\n" + item.Description
 		SendMessage(s, m, messageSend)
 		return
 	} else {
@@ -133,6 +230,11 @@ func CheckSerie(s *discordgo.Session, m *discordgo.MessageCreate) {
 		SendMessage(s, m, messageSend)
 		return
 	}
+}
+
+// !assign @user [@series] translator/editor/poster
+func AssignUserToSeries(s *discordgo.Session, m *discordgo.MessageCreate) {
+
 }
 
 func SendMessage(s *discordgo.Session, m *discordgo.MessageCreate, ms *discordgo.MessageSend) {

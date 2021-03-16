@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/bwmarrin/discordgo"
@@ -18,12 +17,13 @@ func Initalize(inToken string, inBotChannel []string) bool {
 		log.Println("[ER] discordgo.New:", err)
 	}
 	discord.AddHandler(messageCreate)
-
+	// discord.AddHandler(messageReaction)
 	err = discord.Open()
 	if err != nil {
-		fmt.Println("Error opening Discord session: ", err)
+		log.Println("Error opening Discord session: ", err)
+		return false
 	}
-
+	// SERVICE.Greating(discord, inBotChannel[0])
 	return true
 }
 

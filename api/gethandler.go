@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	HELPER "notification-bot/helpers"
 	SERVICE "notification-bot/services"
 
@@ -38,7 +39,18 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			SERVICE.SetSerie(s, m)
 		} else if strings.HasPrefix(m.Content, "!check") {
 			SERVICE.CheckSerie(s, m)
+		} else if strings.HasPrefix(m.Content, "!translate") ||
+			strings.HasPrefix(m.Content, "!edit") ||
+			strings.HasPrefix(m.Content, "!post") {
+			SERVICE.UpdateSerie(s, m)
 		}
 
 	}
+}
+
+func messageReaction(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
+
+	fmt.Println(m.Emoji)
+	// "❤️"
+
 }

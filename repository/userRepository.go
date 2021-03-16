@@ -31,6 +31,18 @@ func FindUserByID(id string) *MODEL.User {
 	return nil
 }
 
+func FindAllUsers() *[]MODEL.User {
+	var users []MODEL.User
+	for _, filePath := range UTILS.GetNoLimitInDirectory(repoDirectory + userPath) {
+		user := readUser(filePath)
+		if user == nil {
+			continue
+		}
+		users = append(users, *user)
+	}
+	return &users
+}
+
 func saveUser(user *MODEL.User) error {
 	filePath := repoDirectory + userPath + user.ID
 	value := "" +

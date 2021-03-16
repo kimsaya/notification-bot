@@ -20,6 +20,19 @@ func GetNowTime() string {
 	return GetNow().Format("15:04:05") //15:04:05 is a format HH:mm:ss
 }
 
+func GetNowTimeName() string {
+	result := ""
+	switch hour := time.Now().Hour(); {
+	case hour < 12:
+		result = "Good morning!"
+	case hour < 17:
+		result = "Good afternoon!"
+	default:
+		result = "Good evening!"
+	}
+	return result
+}
+
 // GetNowTimestamp return current datetime as timestamp
 func GetNowTimestamp() int64 {
 	return GetNow().UnixNano() / int64(time.Millisecond)
