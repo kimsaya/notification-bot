@@ -1,6 +1,6 @@
 package repository
 
-var repoDirectory = ""
+var repoDirectory string
 
 // Initalize a
 func Initalize(directory string) {

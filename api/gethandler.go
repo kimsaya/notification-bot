@@ -42,7 +42,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		} else if strings.HasPrefix(m.Content, "!translate") ||
 			strings.HasPrefix(m.Content, "!edit") ||
 			strings.HasPrefix(m.Content, "!post") {
-			SERVICE.UpdateSerie(s, m)
+			SERVICE.CreateTask(s, m)
 		}
 
 	}
@@ -52,5 +52,6 @@ func messageReaction(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 
 	fmt.Println(m.Emoji)
 	// "❤️"
+	//"✅ ❌"
 
 }

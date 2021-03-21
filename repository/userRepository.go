@@ -21,20 +21,15 @@ func UpdateUser(user *MODEL.User) error {
 }
 
 // FindUserByID a
-func FindUserByID(id string) *MODEL.User {
-	for _, filePath := range UTILS.GetNoLimitInDirectory(repoDirectory + userPath) {
-		userID := UTILS.GetFileNameFromPath(filePath)
-		if userID == id {
-			return readUser(filePath)
-		}
-	}
-	return nil
+func FindUserByID(id string) (*MODEL.User, error) {
+	filePath := repoDirectory + userPath + id
+	return readUser(filePath)
 }
 
 func FindAllUsers() *[]MODEL.User {
 	var users []MODEL.User
-	for _, filePath := range UTILS.GetNoLimitInDirectory(repoDirectory + userPath) {
-		user := readUser(filePath)
+	for _, filePath := range UTILS.GetFileNoLimitInDirectory(repoDirectory + userPath) {
+		user, _ := readUser(filePath)
 		if user == nil {
 			continue
 		}
@@ -59,18 +54,18 @@ func saveUser(user *MODEL.User) error {
 	}
 	return errors.New("Save User Failed.")
 }
-func readUser(filePath string) *MODEL.User {
+func readUser(filePath string) (*MODEL.User, error) {
 	if content, status := UTILS.ReadFile(filePath); status == true {
 		segments := strings.Split(content, "|")
 		if len(segments) < 3 {
-			return nil
+			return nil, errors.New("Bad File")
 		}
 		return &MODEL.User{
 			ID:         UTILS.GetFileNameFromPath(filePath),
 			Name:       segments[0],
 			LastActive: HELPER.StringToInt64(segments[1]),
 			JointDate:  HELPER.StringToInt64(segments[2]),
-		}
+		}, nil
 	}
-	return nil
+	return nil, nil
 }

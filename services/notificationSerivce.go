@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 
 	HELPER "notification-bot/helpers"
@@ -33,7 +34,7 @@ func Greating(s *discordgo.Session, channerlID string) {
 }
 
 func Users(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if user := REPO.FindUserByID(m.Author.ID); user != nil {
+	if user, _ := REPO.FindUserByID(m.Author.ID); user != nil {
 		user.LastActive = HELPER.GetNowTimestamp()
 		REPO.UpdateUser(user)
 		return
@@ -48,42 +49,55 @@ func Users(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // CreateItem a
 func CreateItem(s *discordgo.Session, m *discordgo.MessageCreate) {
-	messageSegment := strings.Split(m.Content, "\"")
-	// fmt.Print(messageSegment)
-	// s.GuildRoles()
-	role, err := s.GuildRoleCreate(m.GuildID)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	role, err = s.GuildRoleEdit(m.GuildID, role.ID, messageSegment[1], 4171230, role.Hoist, role.Permissions, role.Mentionable)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	var messageSend = new(discordgo.MessageSend)
-	messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
-	messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, role.ID)
-	messageSend.Content = "Created: <@&" + role.ID + ">"
-	_, err = s.ChannelMessageSendComplex(m.ChannelID, messageSend)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	// messageSegment := strings.Split(m.Content, "\"")
+	// role, err := s.GuildRoleCreate(m.GuildID)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+	// role, err = s.GuildRoleEdit(m.GuildID, role.ID, messageSegment[1], 4171230, role.Hoist, role.Permissions, role.Mentionable)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+	// var messageSend = new(discordgo.MessageSend)
+	// messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+	// messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, role.ID)
+	// messageSend.Content = "Created: <@&" + role.ID + ">"
+	// _, err = s.ChannelMessageSendComplex(m.ChannelID, messageSend)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
 }
 
-// SetSerie a
+// SetSerie is Create a Seria
 func SetSerie(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// !set @Demon Slayer [7d]
 	messageSegment := strings.FieldsFunc(m.Content, OptionSpliter)
+
 	if len(messageSegment) < 2 {
 		var messageSend = new(discordgo.MessageSend)
 		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
 		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
-		messageSend.Content = "Dear <@" + m.Author.ID + ">: Your command is wrong. \n\tTry to set duration like this => [7d]"
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: Your command is wrong. " +
+			"\n\tExample: !set @Series [7d] " +
+			"\n\t[1d] or [1] = 1 day"
 		SendMessage(s, m, messageSend)
 		return
 	}
+	duration := GetDuration(messageSegment[1])
+	if duration <= 0 {
+		var messageSend = new(discordgo.MessageSend)
+		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: Your command is wrong. " +
+			"\n\tExample: !set @Series [7d] " +
+			"\n\t[1d] or [1] = 1 day"
+		SendMessage(s, m, messageSend)
+		return
+	}
+
 	if len(m.MentionRoles) < 1 {
 		var messageSend = new(discordgo.MessageSend)
 		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
@@ -92,25 +106,33 @@ func SetSerie(s *discordgo.Session, m *discordgo.MessageCreate) {
 		SendMessage(s, m, messageSend)
 		return
 	}
-	role := m.MentionRoles[0]
+	role, _ := s.State.Role(m.GuildID, m.MentionRoles[0])
 
 	// Check
-	if REPO.FindItemByID(role) != nil {
+	if item, _ := REPO.FindItemByID(role.ID); item != nil {
 		var messageSend = new(discordgo.MessageSend)
 		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
 		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
-		messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, role)
-		messageSend.Content = "Dear <@" + m.Author.ID + ">: The process Set <@&" + role + ">" + " is Feild. Becuase: `Already set`."
+		messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, role.ID)
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: The <@&" + role.ID + ">" + " is `Already set`." +
+			"\n\t Duration: " + HELPER.GetDurationFromTimestap(item.Duration)
 		SendMessage(s, m, messageSend)
 		return
 	}
 
 	item := new(MODEL.Item)
-	item.ID = role
-	item.Status = "Translation"
-	item.Duration = GetDuration(messageSegment[1])
+	item.ID = role.ID
+	item.Name = role.Name
+	item.Duration = duration
 	if err := REPO.CreateItem(item); err != nil {
 		log.Println(err)
+		var messageSend = new(discordgo.MessageSend)
+		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
+		messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, role.ID)
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: The process failed." +
+			"\n\t`" + err.Error() + "`"
+		SendMessage(s, m, messageSend)
 		return
 	}
 	var messageSend = new(discordgo.MessageSend)
@@ -122,14 +144,15 @@ func SetSerie(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 //
-func UpdateSerie(s *discordgo.Session, m *discordgo.MessageCreate) {
+func CreateTask(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// !translate @series [Chapter X]
 	messageSegment := strings.FieldsFunc(m.Content, OptionSpliter)
 	if len(messageSegment) < 2 {
 		var messageSend = new(discordgo.MessageSend)
 		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
 		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
-		messageSend.Content = "Dear <@" + m.Author.ID + ">: Your command is wrong. \n\tTry to Chapter like this => [Chapter X]"
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: Your command is wrong." +
+			"\n\tExample: !translate @Series [Chapter X]"
 		SendMessage(s, m, messageSend)
 		return
 	}
@@ -142,49 +165,44 @@ func UpdateSerie(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	role := m.MentionRoles[0]
-	item := REPO.FindItemByID(role)
+	item, _ := REPO.FindItemByID(role)
 	if item == nil {
 		var messageSend = new(discordgo.MessageSend)
 		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
 		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
 		messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, role)
-		messageSend.Content = "Dear <@" + m.Author.ID + ">: The process `" + messageSegment[0] + "` <@&" + role + ">" + " is Feild. Becuase: `Not been set yet`."
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: The <@&" + role + ">" + " is `Not been set yet`."
 		SendMessage(s, m, messageSend)
 		return
 	}
 
 	// Find Exiting
-	newSubItem := new(MODEL.Item)
-	for _, subItem := range *item.SubItems {
-		if subItem.ID == messageSegment[1] {
-			newSubItem = &subItem
-			break
-		}
-	}
+
+	newTask := new(MODEL.Task)
+	newTask.UserID = m.Author.ID
+	newTask.ItemID = item.ID
+	newTask.Name = messageSegment[1]
+	newTask.ID = newTask.UserID + "-" + newTask.ItemID + "-" + messageSegment[1]
+
 	if strings.HasPrefix(m.Content, "!translate") {
-		newSubItem.Status = "Translated"
-		newSubItem.Description = "- Translated" + HELPER.GetNowDate() + " " + HELPER.GetNowTime() + "\n"
+		newTask.ID += "-T"
+		newTask.Status = "Translated"
 	} else if strings.HasPrefix(m.Content, "!edit") {
-		newSubItem.Status = "Edited"
-		newSubItem.Description += "- Edited" + HELPER.GetNowDate() + " " + HELPER.GetNowTime() + "\n"
+		newTask.ID += "-E"
+		newTask.Status = "Edited"
 	} else if strings.HasPrefix(m.Content, "!post") {
-		newSubItem.Status = "Posted"
-		newSubItem.Description += "- Post" + HELPER.GetNowDate() + " " + HELPER.GetNowTime() + "\n"
+		newTask.ID += "-P"
+		newTask.Status = "Posted"
 	}
-	if newSubItem.ID == "" {
-		newSubItem.ID = messageSegment[1]
-		if newSubItem.Status != "Translated" {
-			var messageSend = new(discordgo.MessageSend)
-			messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
-			messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
-			messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, role)
-			messageSend.Content = "Dear <@" + m.Author.ID + ">: The process `" + messageSegment[0] + "` <@&" + role + ">" + " completed with warning becuase: `Never told to translated before`."
-			SendMessage(s, m, messageSend)
-		}
-	}
-	*item.SubItems = append(*item.SubItems, *newSubItem)
-	if err := REPO.UpdateItem(item); err != nil {
-		log.Println(err)
+
+	if err := REPO.CreateTask(newTask); err != nil {
+		var messageSend = new(discordgo.MessageSend)
+		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
+		messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, role)
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: The process failed." +
+			"\n\t`" + err.Error() + "`"
+		SendMessage(s, m, messageSend)
 		return
 	}
 	s.MessageReactionAdd(m.ChannelID, m.ID, "❤️")
@@ -202,7 +220,12 @@ func CheckSerie(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	role := m.MentionRoles[0]
-	if item := REPO.FindItemByID(role); item != nil {
+	var user *discordgo.User
+	if len(m.Mentions) > 0 {
+		user = m.Mentions[0]
+	}
+
+	if item, _ := REPO.FindItemByID(role); item != nil {
 		var messageSend = new(discordgo.MessageSend)
 		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
 		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
@@ -213,10 +236,62 @@ func CheckSerie(s *discordgo.Session, m *discordgo.MessageCreate) {
 			"\nEditor \t\t\t: Unknow" +
 			"\nDuration\t\t: " + HELPER.GetDurationFromTimestap((item.CreatedDate+item.Duration)-HELPER.GetNowTimestamp()) +
 			"\nStatus: "
-			// item.Status + " `WILLBETABLE`"
 
-		for _, subItem := range *item.SubItems {
-			messageSend.Content += "\n[" + subItem.ID + "] \t: " + subItem.Status
+		tasks := new([]MODEL.Task)
+		if user == nil {
+			tasks, _ = REPO.FindTaskByItemID(item.ID)
+
+		}
+		var taskDTOs []MODEL.TaskDTO
+		for _, task := range *tasks {
+			tempTaskDTO := new(MODEL.TaskDTO)
+			for index, taskDTO := range taskDTOs {
+				if taskDTO.Name == task.Name {
+					tempTaskDTO = &taskDTOs[index]
+					break
+				}
+			}
+			if strings.HasSuffix(task.ID, "T") {
+				tempTaskDTO.IsTranslated = true
+			} else if strings.HasSuffix(task.ID, "E") {
+				tempTaskDTO.IsEdited = true
+			} else if strings.HasSuffix(task.ID, "P") {
+				tempTaskDTO.IsPosted = true
+			}
+			if tempTaskDTO.Name == "" {
+				tempTaskDTO.Name = task.Name
+				taskDTOs = append(taskDTOs, *tempTaskDTO)
+			}
+
+		}
+
+		sort.SliceStable(taskDTOs, func(i, j int) bool {
+			isplit := strings.Split(taskDTOs[i].Name, " ")
+			jsplit := strings.Split(taskDTOs[j].Name, " ")
+			return HELPER.StringToInt64(isplit[1]) < HELPER.StringToInt64(jsplit[1])
+		})
+
+		for _, taskDTO := range taskDTOs {
+			messageSend.Content += "\n"
+			messageSend.Content += " Translated"
+			if taskDTO.IsTranslated {
+				messageSend.Content += "[✅]"
+			} else {
+				messageSend.Content += "[❌]"
+			}
+			messageSend.Content += " Edit"
+			if taskDTO.IsEdited {
+				messageSend.Content += "[✅]"
+			} else {
+				messageSend.Content += "[❌]"
+			}
+			messageSend.Content += " Post"
+			if taskDTO.IsPosted {
+				messageSend.Content += "[✅]"
+			} else {
+				messageSend.Content += "[❌]"
+			}
+			messageSend.Content += "  " + taskDTO.Name
 		}
 		// messageSend.Content += "\n\nLog:\n" + item.Description
 		SendMessage(s, m, messageSend)
@@ -254,6 +329,8 @@ func GetDuration(input string) int64 {
 		result = HELPER.StringToInt64(input) * HELPER.GetOneWeek()
 	} else if strings.Contains(input, "d") {
 		input = strings.ReplaceAll(input, "d", "")
+		result = HELPER.StringToInt64(input) * HELPER.GetOneDay()
+	} else {
 		result = HELPER.StringToInt64(input) * HELPER.GetOneDay()
 	}
 	return result

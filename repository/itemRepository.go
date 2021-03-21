@@ -12,78 +12,61 @@ import (
 var itemPath = "items/"
 
 func CreateItem(item *MODEL.Item) error {
-	item.Description = "- Creating: " + HELPER.GetNowDate() + " " + HELPER.GetNowTime() + "\n"
 	item.CreatedDate = HELPER.GetNowTimestamp()
-	return saveItem("", item)
+	return saveItem(item)
 }
 
 func UpdateItem(item *MODEL.Item) error {
-	item.Description += "- Update: " + HELPER.GetNowDate() + " " + HELPER.GetNowTime() + "\n"
 	item.LastUpdate = HELPER.GetNowTimestamp()
-	return saveItem("", item)
+	return saveItem(item)
 }
 
-func FindItemByID(id string) *MODEL.Item {
-	for _, filePath := range UTILS.GetNoLimitInDirectory(repoDirectory + itemPath) {
+func FindItemByID(id string) (*MODEL.Item, error) {
+	for _, filePath := range UTILS.GetFileNoLimitInDirectory(repoDirectory + itemPath) {
 		itemID := UTILS.GetFileNameFromPath(filePath)
 		if itemID == id {
-			return readItem("", itemID)
+			return readItem(itemID)
 		}
 	}
-	return nil
+	return nil, nil
 }
 
-func readItem(mainID, id string) *MODEL.Item {
-	if mainID != "" {
-		// SubItem
-		mainID += "-sub/"
-	}
-	filePath := repoDirectory + itemPath + mainID + id
+func readItem(id string) (*MODEL.Item, error) {
+
+	filePath := repoDirectory + itemPath + id
 	Content, status := UTILS.ReadFile(filePath)
 	if status {
 		item := new(MODEL.Item)
 		segments := strings.Split(Content, "|")
-		if len(segments) < 6 {
-			log.Println("")
-			return nil
+		if len(segments) < 7 {
+			log.Println("[ER] Read Item: Bad File")
+			return nil, errors.New("Bad File")
 		}
 		item.ID = id
 		item.Name = segments[0]
-		item.Description = segments[1]
-		item.Status = segments[2]
-		item.SubItems = new([]MODEL.Item)
-		if mainID == "" {
-			for _, subFilePath := range UTILS.GetNoLimitInDirectory(repoDirectory + itemPath + id + "-sub") {
-				*item.SubItems = append(*item.SubItems, *readItem(id, UTILS.GetFileNameFromPath(subFilePath)))
-			}
-		}
-		item.Duration = HELPER.StringToInt64(segments[3])
-		item.LastUpdate = HELPER.StringToInt64(segments[4])
-		item.CreatedDate = HELPER.StringToInt64(segments[5])
-		return item
+		item.TranslatorID = segments[1]
+		item.EditorID = segments[2]
+		item.PostorID = segments[3]
+		item.Duration = HELPER.StringToInt64(segments[4])
+		item.LastUpdate = HELPER.StringToInt64(segments[5])
+		item.CreatedDate = HELPER.StringToInt64(segments[6])
+		return item, nil
 	}
-	return nil
+	return nil, nil
 }
 
-func saveItem(id string, item *MODEL.Item) error {
-	if id != "" {
-		// SubItem
-		id += "-sub/"
-	}
-	filePath := repoDirectory + itemPath + id + item.ID
+func saveItem(item *MODEL.Item) error {
+
+	filePath := repoDirectory + itemPath + item.ID
 	file := UTILS.OpenFile(filePath)
 	file.Close()
-
-	if item.SubItems != nil {
-		for _, subItem := range *item.SubItems {
-			saveItem(item.ID, &subItem)
-		}
-	}
 	value := item.Name +
 		"|" +
-		item.Description +
+		item.TranslatorID +
 		"|" +
-		item.Status +
+		item.EditorID +
+		"|" +
+		item.PostorID +
 		"|" +
 		HELPER.Int64ToString(item.Duration) +
 		"|" +
@@ -94,5 +77,14 @@ func saveItem(id string, item *MODEL.Item) error {
 	if UTILS.WriteFile(filePath, value) {
 		return nil
 	}
+	log.Println("[ER] Save Item: Failed", item.ID)
 	return errors.New("Can't save Item: " + filePath)
+}
+
+func LogItem(id, message string) {
+	filePath := repoDirectory + itemPath + id + "-LOG/" + HELPER.GetNowDate()
+	file := UTILS.OpenFile(filePath)
+	file.Close()
+	message = HELPER.GetNowTime() + " :" + message
+	UTILS.AppendFile(filePath, message)
 }

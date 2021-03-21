@@ -69,6 +69,7 @@ func ReadFile(filePath string) (result string, status bool) {
 
 // WriteFile write to a file/ create if not exist
 func WriteFile(filePath, message string) bool {
+
 	configData := []byte(message)
 	err := ioutil.WriteFile(filePath, configData, 0644)
 	if err != nil {
@@ -103,12 +104,12 @@ func GetFileNameFromPath(path string) (fileName string) {
 	return sectors[len(sectors)-1]
 }
 
-// GetNoLimitInDirectory return list of all files in a directory
-func GetNoLimitInDirectory(directory string) (listFilePaths []string) {
+// GetFileNoLimitInDirectory return list of all files in a directory
+func GetFileNoLimitInDirectory(directory string) (listFilePaths []string) {
 	var paths []string
 	files, err := ioutil.ReadDir(directory)
 	if err != nil {
-		log.Println("[ER] GetNoLimitInDirectory:", err)
+		log.Println("[ER] ioutil.ReadDir:", err)
 		CreateDirectory(directory)
 	}
 	for _, f := range files {
@@ -120,8 +121,8 @@ func GetNoLimitInDirectory(directory string) (listFilePaths []string) {
 	return paths
 }
 
-// GetLimitInDirectory return list of files in a directory with limit of items
-func GetLimitInDirectory(directory string, limit int) (listFilePaths []string) {
+// GetFileLimitInDirectory return list of files in a directory with limit of items
+func GetFileLimitInDirectory(directory string, limit int) (listFilePaths []string) {
 	var paths []string
 	i := 0
 	err := filepath.Walk(directory,
@@ -139,8 +140,24 @@ func GetLimitInDirectory(directory string, limit int) (listFilePaths []string) {
 			return nil
 		})
 	if err != nil {
-		log.Println("[ER] GetLimitInDirectory", err)
+		log.Println("[ER] filepath.Walk", err)
 		CreateDirectory(directory)
+	}
+	return paths
+}
+
+// GetFileNoLimitInDirectory return list of all files in a directory
+func GetDirectoryNoLimitInDirectory(directory string) (listFilePaths []string) {
+	var paths []string
+	files, err := ioutil.ReadDir(directory)
+	if err != nil {
+		log.Println("[ER] ioutil.ReadDir:", err)
+		CreateDirectory(directory)
+	}
+	for _, f := range files {
+		if f.IsDir() {
+			paths = append(paths, directory+"/"+f.Name())
+		}
 	}
 	return paths
 }
