@@ -43,6 +43,15 @@ func GetTimestampFromTime(inTime time.Time) int64 {
 	return inTime.UnixNano() / int64(time.Millisecond)
 }
 
+func GetDateFromTimestamp(input int64) string {
+	t := time.Unix(int64(input/1000), 0).UTC() //UTC returns t with the location set to UTC.
+	return t.Format("2006-01-02")
+}
+func GetDateTimeFromTimestamp(input int64) string {
+	t := time.Unix(int64(input/1000), 0).UTC() //UTC returns t with the location set to UTC.
+	return t.Format("2006-01-02 T15:04:05")
+}
+
 // GetTimestampFromStringOfDate turn input string as yyyy-MM-dd format to Timestamp
 func GetTimestampFromStringOfDate(input string) int64 {
 	layout := "2006-01-02"

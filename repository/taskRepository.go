@@ -74,6 +74,15 @@ func FindTaskByItemID(itemID string) (*[]MODEL.Task, error) {
 	return &tasks, nil
 }
 
+func FindTaskByItemIDAndUserID(itemID, userID string) (*[]MODEL.Task, error) {
+	var tasks []MODEL.Task
+	for _, filePath := range UTILS.GetFileNoLimitInDirectory(repoDirectory + taskPath + userID + "-" + itemID) {
+		task, _ := readTask(filePath)
+		tasks = append(tasks, *task)
+	}
+	return &tasks, nil
+}
+
 func saveTask(task *MODEL.Task) error {
 	task.ID = strings.ReplaceAll(task.ID, " ", "#")
 	filePath := repoDirectory + taskPath + task.UserID + "-" + task.ItemID + "/" + task.ID
@@ -100,9 +109,16 @@ func readTask(filePath string) (*MODEL.Task, error) {
 		if len(segments) < 4 {
 			return nil, errors.New("Bad File")
 		}
-		tempID := strings.ReplaceAll(UTILS.GetFileNameFromPath(filePath), "#", " ")
+		userIDItemID := UTILS.GetFileNameFromPath(filePath)
+		idsegments := strings.Split(userIDItemID, "-")
+		if len(idsegments) < 2 {
+			return nil, errors.New("Bad File ID")
+		}
+		taskID := strings.ReplaceAll(UTILS.GetFileNameFromPath(filePath), "#", " ")
 		return &MODEL.Task{
-			ID:          tempID,
+			ID:          taskID,
+			UserID:      idsegments[0],
+			ItemID:      idsegments[1],
 			Status:      segments[0],
 			Name:        segments[1],
 			LastUpdate:  HELPER.StringToInt64(segments[2]),

@@ -43,6 +43,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			strings.HasPrefix(m.Content, "!edit") ||
 			strings.HasPrefix(m.Content, "!post") {
 			SERVICE.CreateTask(s, m)
+		} else if strings.HasPrefix(m.Content, "!status") {
+			SERVICE.StatusUser(s, m)
 		}
 
 	}
