@@ -45,6 +45,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			SERVICE.CreateTask(s, m)
 		} else if strings.HasPrefix(m.Content, "!status") {
 			SERVICE.StatusUser(s, m)
+		} else if strings.HasPrefix(m.Content, "!assign") {
+			SERVICE.AssignUserToItem(s, m)
 		}
 
 	}

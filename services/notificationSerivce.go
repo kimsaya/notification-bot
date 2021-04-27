@@ -250,6 +250,15 @@ func CheckSerie(s *discordgo.Session, m *discordgo.MessageCreate) {
 		} else {
 			messageSend.Content += "\nEditor \t\t\t: Unknow"
 		}
+		if item.PostorID != "" {
+			postor, errE := REPO.FindUserByID(item.PostorID)
+			if errE != nil {
+				log.Println(errE)
+			}
+			messageSend.Content += "\nPostor \t\t\t: " + postor.Name
+		} else {
+			messageSend.Content += "\nPostor \t\t\t: Unknow"
+		}
 
 		if (item.CreatedDate+item.Duration)-HELPER.GetNowTimestamp() < 0 {
 			messageSend.Content += "\nDuration\t\t: `Expired` | " + HELPER.GetDateFromTimestamp(item.CreatedDate+item.Duration)
@@ -362,6 +371,119 @@ func SendMessage(s *discordgo.Session, m *discordgo.MessageCreate, ms *discordgo
 		fmt.Println(err)
 		return
 	}
+}
+
+func AssignUserToItem(s *discordgo.Session, m *discordgo.MessageCreate) {
+	var user *discordgo.User
+	var role string
+
+	if len(m.Mentions) > 0 {
+		user = m.Mentions[0]
+	} else {
+		var messageSend = new(discordgo.MessageSend)
+		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: \n\tPls mention a User."
+		SendMessage(s, m, messageSend)
+		return
+	}
+	if len(m.MentionRoles) > 0 {
+		role = m.MentionRoles[0]
+	} else {
+		var messageSend = new(discordgo.MessageSend)
+		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: \n\tPls mention the item."
+		SendMessage(s, m, messageSend)
+		return
+	}
+	internalUser, _ := REPO.FindUserByID(user.ID)
+	if internalUser == nil {
+		REPO.CreateUser(&MODEL.User{
+			ID:         user.ID,
+			Name:       user.Username,
+			JointDate:  HELPER.GetNowTimestamp(),
+			LastActive: HELPER.GetNowTimestamp(),
+		})
+		internalUser, _ = REPO.FindUserByID(user.ID)
+	}
+	internalItem, _ := REPO.FindItemByID(role)
+	if internalItem == nil {
+		var messageSend = new(discordgo.MessageSend)
+		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: \n\tPls item you mention not yet been `!set`."
+		SendMessage(s, m, messageSend)
+		return
+	}
+	if strings.Contains(m.Content, "translator") {
+		internalItem.TranslatorID = internalUser.ID
+	} else if strings.Contains(m.Content, "editor") {
+		internalItem.EditorID = internalUser.ID
+	} else if strings.Contains(m.Content, "poster") {
+		internalItem.PostorID = internalUser.ID
+	} else {
+		var messageSend = new(discordgo.MessageSend)
+		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: \n\tPls set Assign position like [translator] or [editor] or [poster]."
+		SendMessage(s, m, messageSend)
+		return
+	}
+	err := REPO.UpdateItem(internalItem)
+	if err != nil {
+		var messageSend = new(discordgo.MessageSend)
+		messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+		messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
+		messageSend.Content = "Dear <@" + m.Author.ID + ">: \n\tProcess Error." + err.Error()
+		SendMessage(s, m, messageSend)
+		return
+	}
+	s.MessageReactionAdd(m.ChannelID, m.ID, "❤️")
+	internalItem, err = REPO.FindItemByID(internalItem.ID)
+	if err != nil {
+		return
+	}
+	var messageSend = new(discordgo.MessageSend)
+	messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
+	messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
+	messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, role)
+	messageSend.Content = "Dear <@" + m.Author.ID +
+		">\n>>> The <@&" + role + "> "
+	if internalItem.TranslatorID != "" {
+		translater, errT := REPO.FindUserByID(internalItem.TranslatorID)
+		if errT != nil {
+			log.Println(errT)
+		}
+		messageSend.Content += "\nTranslator \t: " + translater.Name
+	} else {
+		messageSend.Content += "\nTranslator \t: Unknow"
+	}
+	if internalItem.EditorID != "" {
+		editor, errE := REPO.FindUserByID(internalItem.EditorID)
+		if errE != nil {
+			log.Println(errE)
+		}
+		messageSend.Content += "\nEditor \t\t\t: " + editor.Name
+	} else {
+		messageSend.Content += "\nEditor \t\t\t: Unknow"
+	}
+	if internalItem.PostorID != "" {
+		postor, errE := REPO.FindUserByID(internalItem.PostorID)
+		if errE != nil {
+			log.Println(errE)
+		}
+		messageSend.Content += "\nPostor \t\t\t: " + postor.Name
+	} else {
+		messageSend.Content += "\nPostor \t\t\t: Unknow"
+	}
+
+	if (internalItem.CreatedDate+internalItem.Duration)-HELPER.GetNowTimestamp() < 0 {
+		messageSend.Content += "\nDuration\t\t: `Expired` | " + HELPER.GetDateFromTimestamp(internalItem.CreatedDate+internalItem.Duration)
+	} else {
+		messageSend.Content += "\nDuration\t\t: " + HELPER.GetDurationFromTimestap((internalItem.CreatedDate+internalItem.Duration)-HELPER.GetNowTimestamp())
+	}
+	SendMessage(s, m, messageSend)
 }
 
 func OptionSpliter(r rune) bool {
