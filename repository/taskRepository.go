@@ -53,6 +53,28 @@ func FindTaskByUserID(userID string) (*[]MODEL.Task, error) {
 	}
 	return &tasks, nil
 }
+func FindTaskByUserIDAndLastTime(userID string, time int64) (*[]MODEL.Task, error) {
+	var tasks []MODEL.Task
+	for _, dirPath := range UTILS.GetDirectoryNoLimitInDirectory(repoDirectory + taskPath) {
+		userIDItemID := UTILS.GetFileNameFromPath(dirPath)
+		segments := strings.Split(userIDItemID, "-")
+		if len(segments) < 2 {
+			return nil, errors.New("Invalid ID")
+		}
+		if segments[0] != userID {
+			continue
+		}
+		for _, filePath := range UTILS.GetFileNoLimitInDirectory(dirPath) {
+			task, _ := readTask(filePath)
+			if task.CreatedDate <= (HELPER.GetNowTimestamp() - time) {
+				continue
+			}
+			tasks = append(tasks, *task)
+		}
+
+	}
+	return &tasks, nil
+}
 
 func FindTaskByItemID(itemID string) (*[]MODEL.Task, error) {
 	var tasks []MODEL.Task

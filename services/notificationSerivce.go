@@ -313,14 +313,26 @@ func StatusUser(s *discordgo.Session, m *discordgo.MessageCreate) {
 		})
 		internalUser, _ = REPO.FindUserByID(user.ID)
 	}
+	var time int64 = 0
+	messageSegment := strings.FieldsFunc(m.Content, OptionSpliter)
+	if len(messageSegment) >= 2 {
+		time = GetDuration(messageSegment[1])
+	}
 	var messageSend = new(discordgo.MessageSend)
 	messageSend.AllowedMentions = new(discordgo.MessageAllowedMentions)
 	messageSend.AllowedMentions.Users = append(messageSend.AllowedMentions.Users, m.Author.ID)
 	messageSend.Content = "User <@" + m.Author.ID + ">" +
 		"\nLast Activity: " + HELPER.GetDateTimeFromTimestamp(internalUser.LastActive) +
-		"\nCompleted tasks: "
+		"\n>>> Completed tasks: "
 	var items []string
-	tasks, _ := REPO.FindTaskByUserID(user.ID)
+	var tasks *[]MODEL.Task
+	if time > 0 {
+		messageSend.Content += HELPER.GetDurationFromTimestap(time) + " Ago"
+		tasks, _ = REPO.FindTaskByUserIDAndLastTime(user.ID, time)
+	} else {
+		tasks, _ = REPO.FindTaskByUserID(user.ID)
+	}
+
 	if len(*tasks) < 1 {
 		messageSend.Content += "\n\t No Task"
 		SendMessage(s, m, messageSend)
@@ -331,6 +343,7 @@ func StatusUser(s *discordgo.Session, m *discordgo.MessageCreate) {
 			items = append(items, task.ItemID)
 		}
 		messageSend.Content += "\n\t<@&" + task.ItemID + ">"
+		messageSend.Content += " " + HELPER.GetDateFromTimestamp(task.CreatedDate) + " "
 		if strings.HasSuffix(task.ID, "T") {
 			messageSend.Content += " [" + task.Name + "] Translated"
 		} else if strings.HasSuffix(task.ID, "E") {
@@ -338,7 +351,7 @@ func StatusUser(s *discordgo.Session, m *discordgo.MessageCreate) {
 		} else if strings.HasSuffix(task.ID, "P") {
 			messageSend.Content += " [" + task.Name + "] Posted"
 		}
-		messageSend.Content += " | " + HELPER.GetDateFromTimestamp(task.CreatedDate)
+
 	}
 	messageSend.AllowedMentions.Roles = append(messageSend.AllowedMentions.Roles, items...)
 	SendMessage(s, m, messageSend)
